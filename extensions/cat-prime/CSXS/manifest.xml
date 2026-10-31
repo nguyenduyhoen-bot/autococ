@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ExtensionManifest Version="7.0" ExtensionBundleId="com.cat.prime" ExtensionBundleVersion="1.0.0"
+    ExtensionBundleName="CAT Prime" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <ExtensionList>
+        <Extension Id="com.cat.prime.panel" Version="1.0.0" />
+    </ExtensionList>
+    <ExecutionEnvironment>
+        <HostList>
+            <!-- Premiere Pro support from CC 2020 through 2026+ -->
+            <Host Name="PPRO" Version="[14.0,99.9]" />
+        </HostList>
+        <LocaleList>
+            <Locale Code="All" />
+        </LocaleList>
+        <RequiredRuntimeList>
+            <RequiredRuntime Name="CSXS" Version="9.0" />
+        </RequiredRuntimeList>
+    </ExecutionEnvironment>
+    <DispatchInfoList>
+        <Extension Id="com.cat.prime.panel">
+            <DispatchInfo>
+                <Resources>
+                    <MainPath>./client/index.html</MainPath>
+                    <ScriptPath>./host/Premiere.jsx</ScriptPath>
+                    <CEPEngineRefs>
+                        <CEPEngineRef Id="Node.js" />
+                    </CEPEngineRefs>
+                </Resources>
+                <Lifecycle>
+                    <AutoVisible>true</AutoVisible>
+                </Lifecycle>
+                <UI>
+                    <Type>Panel</Type>
+                    <Menu>CAT Prime - AI Video Tools</Menu>
+                    <Geometry>
+                        <Size>
+                            <Height>720</Height>
+                            <Width>380</Width>
+                        </Size>
+                        <MinSize>
+                            <Height>500</Height>
+                            <Width>300</Width>
+                        </MinSize>
+                    </Geometry>
+                </UI>
+            </DispatchInfo>
+        </Extension>
+    </DispatchInfoList>
+</ExtensionManifest>
+

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>CAT AF - After Effects AI Extension</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="panel-container">
+    <!-- Header -->
+    <header class="panel-header">
+      <div class="brand">
+        <div class="logo-box">◈</div>
+        <div>
+          <h1 class="brand-title">CAT AF</h1>
+          <span class="brand-sub">Gemini Vision & JSX Engine</span>
+        </div>
+      </div>
+      <div class="license-badge" id="licenseBadge">Đang kết nối...</div>
+    </header>
+
+    <!-- Nav Tabs -->
+    <nav class="nav-tabs">
+      <button class="tab-btn active" data-tab="vision">Vision & Prompts</button>
+      <button class="tab-btn" data-tab="jsx">JSX Generator</button>
+      <button class="tab-btn" data-tab="presets">Thư viện Presets</button>
+    </nav>
+
+    <!-- Main Content Panels -->
+    <main class="panel-body">
+      <!-- 1. VISION & PROMPTS TAB -->
+      <section class="tab-content active" id="tab-vision">
+        <div class="section-desc">
+          Tải ảnh tham chiếu từ máy tính. Gemini Vision sẽ phân tích bố cục, ánh sáng và tự động gợi ý các câu lệnh hiệu ứng chuyển động.
+        </div>
+
+        <!-- Image Upload Dropzone -->
+        <div class="dropzone" id="dropzone">
+          <input type="file" id="fileInput" accept="image/*" style="display:none;">
+          <div class="drop-icon">📷</div>
+          <div class="drop-text" id="dropText">Kéo thả ảnh vào đây hoặc bấm để chọn tệp</div>
+          <div class="drop-sub">Hỗ trợ JPG, PNG, WebP tối đa 10MB</div>
+        </div>
+
+        <!-- Image Preview Card -->
+        <div class="img-preview-box" id="imgPreviewBox" style="display:none;">
+          <img id="imgPreview" src="" alt="Reference Image">
+          <button class="btn-clear-img" id="btnClearImg">✕ Hủy ảnh</button>
+        </div>
+
+        <button class="btn btn-primary" id="btnAnalyzeImage" style="display:none;">
+          👁️ Gửi ảnh đến Gemini Vision API
+        </button>
+
+        <div class="progress-box" id="visionProgress" style="display:none;">
+          <div class="progress-bar"><div class="progress-fill" id="visionFill"></div></div>
+          <div class="progress-text" id="visionText">Gemini đang phân tích ánh sáng & vật thể...</div>
+        </div>
+
+        <!-- Vision Analysis Results -->
+        <div class="analysis-results" id="analysisResults" style="display:none;">
+          <h4 class="section-title">Kết quả Phân tích Gemini Vision</h4>
+          <div class="analysis-grid">
+            <div class="analysis-item">
+              <span class="a-label">Chủ thể chính:</span>
+              <span class="a-val" id="resSubject">Sản phẩm Camera 3D / Công nghệ</span>
+            </div>
+            <div class="analysis-item">
+              <span class="a-label">Bố cục:</span>
+              <span class="a-val" id="resLayout">Chính tâm (Center-weighted), Tỷ lệ vàng</span>
+            </div>
+            <div class="analysis-item">
+              <span class="a-label">Ánh sáng:</span>
+              <span class="a-val" id="resLight">Studio Rim Light Cyan & Deep Blue</span>
+            </div>
+            <div class="analysis-item">
+              <span class="a-label">Gợi ý phong cách:</span>
+              <span class="a-val" id="resStyle">Cinematic 3D Motion & Light Sweep</span>
+            </div>
+          </div>
+
+          <h4 class="section-title" style="margin-top:12px;">Đề xuất Hiệu ứng AI (Bấm để tạo mã JSX):</h4>
+          <div class="prompts-list" id="promptsList"></div>
+        </div>
+      </section>
+
+      <!-- 2. JSX GENERATOR TAB -->
+      <section class="tab-content" id="tab-jsx">
+        <div class="section-desc">
+          Sinh mã nguồn ExtendScript (.jsx) thực thi trong After Effects: Tạo Composition, Camera 3D, Solid, Ánh sáng và Keyframe.
+        </div>
+
+        <div class="control-group">
+          <label>Mô tả hiệu ứng muốn tạo (Prompt):</label>
+          <div class="input-with-action">
+            <textarea id="promptInput" rows="2" placeholder="Ví dụ: Cinematic Product Reveal with 3D Camera Rotation and soft spotlight..."></textarea>
+            <button class="btn btn-primary" id="btnGenerateJsx">⚡ Sinh mã JSX</button>
+          </div>
+        </div>
+
+        <div class="jsx-editor-box">
+          <div class="jsx-header">
+            <span class="jsx-title">ExtendScript Code (.jsx)</span>
+            <div class="jsx-actions">
+              <button class="btn-sm" id="btnCopyScript">📋 Copy Script</button>
+              <button class="btn-sm" id="btnSavePreset">💾 Lưu Preset</button>
+            </div>
+          </div>
+          <textarea id="jsxCode" class="jsx-code-area" spellcheck="false" placeholder="// Mã nguồn JSX sẽ xuất hiện tại đây..."></textarea>
+        </div>
+
+        <div class="execution-actions">
+          <button class="btn btn-success" id="btnRunInAe">
+            ▶️ Run in After Effects (Thực thi ngay)
+          </button>
+        </div>
+
+        <div class="safeguard-box">
+          🛡️ <strong>An toàn After Effects:</strong> Toàn bộ mã được bọc trong <code>app.beginUndoGroup</code>, có thể hoàn tác (Ctrl+Z) bất kỳ lúc nào mà không hỏng project gốc.
+        </div>
+      </section>
+
+      <!-- 3. PRESETS LIBRARY TAB -->
+      <section class="tab-content" id="tab-presets">
+        <div class="section-desc">
+          Thư viện hiệu ứng motion đồ họa chuyên nghiệp, tích hợp sẵn mã nguồn chạy ngay trên After Effects.
+        </div>
+
+        <div class="preset-filter-row">
+          <input type="text" id="presetSearch" placeholder="Tìm kiếm hiệu ứng...">
+          <select id="presetCategory">
+            <option value="all">Tất cả danh mục</option>
+            <option value="Cinematic">Cinematic</option>
+            <option value="3D Motion">3D Motion</option>
+            <option value="Light Effects">Light Effects</option>
+            <option value="Technology">Technology</option>
+            <option value="Particle">Particle</option>
+            <option value="Typography">Typography</option>
+            <option value="Transition">Transition</option>
+            <option value="Logo Reveal">Logo Reveal</option>
+          </select>
+        </div>
+
+        <div class="presets-grid" id="presetsGrid"></div>
+      </section>
+    </main>
+
+    <!-- Footer Notification -->
+    <div class="panel-footer" id="statusFooter">
+      Sẵn sàng kết nối với Adobe After Effects.
+    </div>
+  </div>
+
+  <script src="CSInterface.js"></script>
+  <script src="presets.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
+

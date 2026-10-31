@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>CAT Prime - Premiere Pro Extension</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="panel-container">
+    <!-- Header -->
+    <header class="panel-header">
+      <div class="brand">
+        <div class="logo-box">⚡</div>
+        <div>
+          <h1 class="brand-title">CAT PRIME</h1>
+          <span class="brand-sub">AI Video Engine</span>
+        </div>
+      </div>
+      <div class="license-badge" id="licenseBadge">Đang kết nối...</div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="nav-tabs">
+      <button class="tab-btn active" data-tab="rough-cut">Rough Cut</button>
+      <button class="tab-btn" data-tab="subtitles">Subtitles</button>
+      <button class="tab-btn" data-tab="denoise">Denoise</button>
+      <button class="tab-btn" data-tab="beauty">Face Beauty</button>
+    </nav>
+
+    <!-- Main Content Panels -->
+    <main class="panel-body">
+      <!-- 1. ROUGH CUT TAB -->
+      <section class="tab-content active" id="tab-rough-cut">
+        <div class="section-desc">
+          Tự động phát hiện khoảng lặng, đoạn thừa và tạo Sequence đã cắt lọc mượt mà.
+        </div>
+
+        <div class="control-group">
+          <div class="label-row">
+            <span>Ngưỡng phát hiện âm lượng lặng</span>
+            <span class="val-badge" id="silenceDbVal">-28 dB</span>
+          </div>
+          <input type="range" min="-45" max="-15" value="-28" id="silenceDbSlider">
+        </div>
+
+        <div class="control-group">
+          <div class="label-row">
+            <span>Độ dài khoảng lặng tối thiểu</span>
+            <span class="val-badge" id="silenceDurVal">0.6 giây</span>
+          </div>
+          <input type="range" min="0.2" max="2.0" step="0.1" value="0.6" id="silenceDurSlider">
+        </div>
+
+        <div class="safeguard-box">
+          🛡️ <strong>Bảo vệ tệp gốc:</strong> CAT Prime tạo Sequence mới trên Premiere Pro và cam kết không ghi đè bất kỳ file video gốc nào trên ổ cứng.
+        </div>
+
+        <div class="btn-group">
+          <button class="btn btn-primary" id="btnAnalyzeRoughCut">
+            🔍 Phân tích Video bằng AI
+          </button>
+          <button class="btn btn-success" id="btnApplyRoughCut" style="display:none;">
+            ✂️ Áp dụng Cắt thô (Tạo Sequence mới)
+          </button>
+        </div>
+
+        <div class="progress-box" id="roughCutProgress" style="display:none;">
+          <div class="progress-bar"><div class="progress-fill" id="roughCutFill"></div></div>
+          <div class="progress-text" id="roughCutText">Đang phân tích khung hình...</div>
+        </div>
+
+        <div class="preview-box" id="roughCutPreview" style="display:none;">
+          <h4>Các đoạn sẽ được loại bỏ:</h4>
+          <ul id="cutsList" class="cuts-list"></ul>
+        </div>
+      </section>
+
+      <!-- 2. SUBTITLES TAB -->
+      <section class="tab-content" id="tab-subtitles">
+        <div class="section-desc">
+          Chuyển giọng nói thành văn bản bằng Gemini, tạo mốc thời gian và định dạng phong cách TikTok / Reels.
+        </div>
+
+        <div class="control-group">
+          <label>Ngôn ngữ giọng nói</label>
+          <select id="subLanguage" class="select-input">
+            <option value="vi">Tiếng Việt (Nhận diện tối ưu)</option>
+            <option value="en">English</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label>Phong cách Typography</label>
+          <select id="subStyle" class="select-input">
+            <option value="tiktok">TikTok Viral (Chữ vàng nổi bật / Đổ bóng)</option>
+            <option value="reels">Instagram Reels Minimalist</option>
+            <option value="youtube">YouTube Creator Bold Subtitle</option>
+          </select>
+        </div>
+
+        <div class="btn-group">
+          <button class="btn btn-primary" id="btnGenerateSubtitles">
+            🎙️ Tạo Phụ đề bằng Gemini AI
+          </button>
+        </div>
+
+        <div class="preview-box" id="subPreviewBox" style="display:none;">
+          <div class="sub-actions">
+            <button class="btn-sm" id="btnExportSrt">Xuất file .SRT</button>
+            <button class="btn-sm" id="btnExportVtt">Xuất file .VTT</button>
+            <button class="btn-sm btn-accent" id="btnTimelineSub">Tạo trên Timeline</button>
+          </div>
+          <div class="subtitles-editor" id="subtitlesList"></div>
+        </div>
+      </section>
+
+      <!-- 3. DENOISE TAB -->
+      <section class="tab-content" id="tab-denoise">
+        <div class="section-desc">
+          Triệt tiêu tiếng ồn quạt máy, điều hòa, gió và giữ nguyên chất lượng giọng nói tự nhiên.
+        </div>
+
+        <div class="control-group">
+          <div class="label-row">
+            <span>Cường độ khử tạp âm</span>
+            <span class="val-badge" id="denoiseVal">75%</span>
+          </div>
+          <input type="range" min="0" max="100" value="75" id="denoiseSlider">
+        </div>
+
+        <div class="checkbox-group">
+          <label class="checkbox-item">
+            <input type="checkbox" id="chkFan" checked> Loại bỏ tiếng quạt / máy lạnh
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" id="chkWind" checked> Giảm tiếng gió & hơi thở sát mic
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" id="chkVocal" checked> Tăng cường làm rõ dải âm giọng nói
+          </label>
+        </div>
+
+        <div class="btn-group">
+          <button class="btn btn-secondary" id="btnPreviewAudio">
+            🔊 Nghe thử mô phỏng (A/B Test)
+          </button>
+          <button class="btn btn-primary" id="btnApplyDenoise">
+            ✨ Áp dụng Khử ồn vào Timeline
+          </button>
+        </div>
+      </section>
+
+      <!-- 4. FACE BEAUTY TAB -->
+      <section class="tab-content" id="tab-beauty">
+        <div class="section-desc">
+          Làm mịn da tự nhiên, xóa khuyết điểm và tạo thon gọn khuôn mặt không làm mờ chi tiết mắt, miệng.
+        </div>
+
+        <div class="control-group">
+          <div class="label-row">
+            <span>Làm mịn da tự nhiên (Skin Smoothing)</span>
+            <span class="val-badge" id="smoothVal">45%</span>
+          </div>
+          <input type="range" min="0" max="100" value="45" id="smoothSlider">
+        </div>
+
+        <div class="control-group">
+          <div class="label-row">
+            <span>Sáng da tự nhiên (Brightness Boost)</span>
+            <span class="val-badge" id="brightVal">+15%</span>
+          </div>
+          <input type="range" min="-30" max="50" value="15" id="brightSlider">
+        </div>
+
+        <div class="control-group">
+          <div class="label-row">
+            <span>Độ thon gọn khuôn mặt (V-Line Contour)</span>
+            <span class="val-badge" id="vlineVal">20%</span>
+          </div>
+          <input type="range" min="0" max="60" value="20" id="vlineSlider">
+        </div>
+
+        <div class="btn-group">
+          <button class="btn btn-primary" id="btnApplyBeauty">
+            💄 Áp dụng Làm đẹp vào Video
+          </button>
+        </div>
+      </section>
+    </main>
+
+    <!-- Feedback notification footer -->
+    <div class="panel-footer" id="statusFooter">
+      Sẵn sàng kết nối với Premiere Pro.
+    </div>
+  </div>
+
+  <script src="CSInterface.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
+

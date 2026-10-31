@@ -1,0 +1,119 @@
+{
+  "name": "cat-manager-desktop",
+  "version": "1.1.4",
+  "description": "CAT Product Manager - Desktop Application for Adobe Extensions",
+  "author": "CAT Ecosystem <support@catmanager.com>",
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev:renderer": "vite",
+    "build:renderer": "vite build",
+    "build": "vite build",
+    "prebuild:win": "node -e \"const fs=require('fs'); fs.mkdirSync('../release/windows', {recursive:true}); fs.mkdirSync('../release/macos', {recursive:true});\"",
+    "build:win": "vite build && electron-builder --win --x64",
+    "prebuild:mac": "node -e \"const fs=require('fs'); fs.mkdirSync('../release/macos', {recursive:true});\"",
+    "build:mac": "vite build && electron-builder --mac --publish never",
+    "pack": "vite build && electron-builder --dir"
+  },
+  "build": {
+    "appId": "com.cathouse.manager",
+    "productName": "CAT Manager",
+    "directories": {
+      "output": "../release"
+    },
+    "files": [
+      "dist/**/*",
+      "src/main/**/*",
+      "src/preload/**/*",
+      "public/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "../extensions",
+        "to": "extensions",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "artifactName": "windows/CAT-Manager-Setup.exe"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "CAT Manager",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "runAfterFinish": true
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png",
+      "category": "public.app-category.video",
+      "minimumSystemVersion": "13.0.0",
+      "artifactName": "macos/CAT-Manager.dmg",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false
+    },
+    "dmg": {
+      "title": "CAT Manager",
+      "icon": "build/icon.png",
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ],
+      "window": {
+        "width": 540,
+        "height": 380
+      }
+    }
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.1",
+    "lucide-react": "^0.460.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.15",
+    "vite": "^6.0.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nguyenduyhoen-bot/autococ-updates.git"
+  }
+}

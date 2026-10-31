@@ -1,4 +1,4 @@
-name: Build & Release CAT Manager (Windows & macOS)
+name: Build & Package CAT Manager (Windows & macOS)
 
 on:
   workflow_dispatch:
@@ -9,74 +9,6 @@ on:
         default: '1.1.4'
 
 jobs:
-  build-windows:
-    name: Build Windows Setup (x64)
-    runs-on: windows-latest
-
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js 20
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'npm'
-          cache-dependency-path: desktop-app/package-lock.json
-
-      - name: Install Desktop App Dependencies
-        run: |
-          cd desktop-app
-          npm ci || npm install
-
-      - name: Extract Version
-        id: get_version
-        shell: pwsh
-        run: |
-          $ver = "${{ github.event.inputs.version }}"
-          if ([string]::IsNullOrWhiteSpace($ver)) {
-            $pkg = Get-Content desktop-app/package.json -Raw | ConvertFrom-Json
-            $ver = $pkg.version
-          }
-          if ($ver -eq $null -or $ver -eq "") { $ver = "1.1.1" }
-          echo "VERSION=$ver" >> $env:GITHUB_ENV
-          echo "Determined Version: $ver"
-
-      - name: Build Windows Installer (CAT-Manager-Setup)
-        run: |
-          cd desktop-app
-          npm run build:win
-        env:
-          GH_TOKEN: ${{ secrets.GH_RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
-
-      - name: Prepare Versioned Artifacts & Checksums
-        shell: pwsh
-        run: |
-          $ver = "$env:VERSION"
-          $baseExe = "release/windows/CAT-Manager-Setup.exe"
-          $verExe = "release/windows/CAT-Manager-Setup-$ver.exe"
-          
-          if (Test-Path $baseExe) {
-            Copy-Item $baseExe $verExe -Force
-            $hash = (Get-FileHash -Algorithm SHA256 $baseExe).Hash.ToLower()
-            Set-Content -Path "$baseExe.sha256" -Value $hash
-            Set-Content -Path "$verExe.sha256" -Value $hash
-            Write-Host "Windows Setup SHA-256: $hash"
-          } else {
-            throw "Built file not found: $baseExe"
-          }
-
-      - name: Upload Windows Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: CAT-Manager-Windows-Setup
-          path: |
-            release/windows/CAT-Manager-Setup.exe
-            release/windows/CAT-Manager-Setup.exe.sha256
-            release/windows/CAT-Manager-Setup-*.exe
-            release/windows/CAT-Manager-Setup-*.exe.sha256
-          if-no-files-found: error
-
   build-macos:
     name: Build macOS DMG (ARM64 & x64 Universal)
     runs-on: macos-latest
@@ -104,8 +36,8 @@ jobs:
           if [ -z "$VER" ]; then
             VER=$(node -p "require('./desktop-app/package.json').version")
           fi
-          echo "VERSION=${VER:-1.1.1}" >> $GITHUB_ENV
-          echo "Determined Version: ${VER:-1.1.1}"
+          echo "VERSION=${VER:-1.1.4}" >> $GITHUB_ENV
+          echo "Determined Version: ${VER:-1.1.4}"
 
       - name: Build macOS DMG (CAT-Manager.dmg - ARM64 & Intel)
         run: |
@@ -118,126 +50,28 @@ jobs:
       - name: Prepare Versioned Artifacts & Checksums
         run: |
           VER="${{ env.VERSION }}"
-          BASE_DMG="release/macos/CAT-Manager.dmg"
-          VER_DMG="release/macos/CAT-Manager-${VER}.dmg"
+          mkdir -p release/macos
+          DMG_FILES=$(find release -name "*.dmg" 2>/dev/null)
+          echo "Found DMG files: $DMG_FILES"
+          for f in $DMG_FILES; do
+            filename=$(basename "$f")
+            cp -f "$f" "release/macos/$filename"
+            shasum -a 256 "$f" | awk '{print $1}' > "release/macos/$filename.sha256"
+          done
 
-          if [ -f "$BASE_DMG" ]; then
-            cp "$BASE_DMG" "$VER_DMG"
-            shasum -a 256 "$BASE_DMG" | awk '{print $1}' > "$BASE_DMG.sha256"
-            shasum -a 256 "$VER_DMG" | awk '{print $1}' > "$VER_DMG.sha256"
-            echo "macOS DMG SHA-256: $(cat $BASE_DMG.sha256)"
-          else
-            echo "Built DMG not found: $BASE_DMG"
-            exit 1
+          if [ -f "release/macos/CAT-Manager.dmg" ]; then
+            cp -f "release/macos/CAT-Manager.dmg" "release/macos/CAT-Manager-${VER}.dmg"
+            shasum -a 256 "release/macos/CAT-Manager-${VER}.dmg" | awk '{print $1}' > "release/macos/CAT-Manager-${VER}.dmg.sha256"
           fi
+
+          echo "macOS Artifacts prepared in release/macos/:"
+          ls -la release/macos/
 
       - name: Upload macOS Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: CAT-Manager-macOS-DMG
           path: |
-            release/macos/CAT-Manager.dmg
-            release/macos/CAT-Manager.dmg.sha256
-            release/macos/CAT-Manager-*.dmg
-            release/macos/CAT-Manager-*.dmg.sha256
+            release/macos/*.dmg
+            release/macos/*.dmg.sha256
           if-no-files-found: error
-
-  publish-release:
-    name: Publish Release to GitHub Releases
-    needs: [build-windows, build-macos]
-    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Download Windows Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: CAT-Manager-Windows-Setup
-          path: dist-release/windows
-
-      - name: Download macOS Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: CAT-Manager-macOS-DMG
-          path: dist-release/macos
-
-      - name: Determine Tag and Version
-        id: vars
-        run: |
-          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
-            TAG="${GITHUB_REF#refs/tags/}"
-            VER="${TAG#v}"
-          else
-            VER="${{ github.event.inputs.version || '1.1.1' }}"
-            TAG="v${VER}"
-          fi
-          echo "TAG=${TAG}" >> $GITHUB_ENV
-          echo "VERSION=${VER}" >> $GITHUB_ENV
-          echo "Tag: $TAG, Version: $VER"
-
-      - name: Block Full Installers on v1.1.2+ (Section 7)
-        run: |
-          if [[ "${{ env.VERSION }}" == "1.1.2"* ]] || [[ "${{ env.TAG }}" == "v1.1.2"* ]]; then
-            echo "❌ CRITICAL: As per v1.1.2 security policy, full .exe / .dmg installers are strictly forbidden on GitHub Releases."
-            echo "Please use patch-release.yml to distribute signed differential patches."
-            exit 1
-          fi
-
-      - name: Publish to GitHub Releases
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ env.TAG }}
-          name: CAT Manager ${{ env.TAG }}
-          draft: false
-          prerelease: false
-          files: |
-            dist-release/windows/CAT-Manager-Setup.exe
-            dist-release/windows/CAT-Manager-Setup.exe.sha256
-            dist-release/windows/CAT-Manager-Setup-${{ env.VERSION }}.exe
-            dist-release/windows/CAT-Manager-Setup-${{ env.VERSION }}.exe.sha256
-            dist-release/macos/CAT-Manager.dmg
-            dist-release/macos/CAT-Manager.dmg.sha256
-            dist-release/macos/CAT-Manager-${{ env.VERSION }}.dmg
-            dist-release/macos/CAT-Manager-${{ env.VERSION }}.dmg.sha256
-          body: |
-            ## CAT Manager ${{ env.TAG }} Official Release
-            
-            ### ✨ Release Highlights:
-            - **Mandatory Authentication Guard**: Strict website account enforcement.
-            - **Remote Session Management**: Heartbeat token revocation & active session auditing.
-            - **GitHub Releases Migration**: High-speed CDN update distribution directly from GitHub Releases.
-            - **Adobe Extensions Manager**: 9-step automated installation for CAT Prime & CAT AF.
-
-            ### 🔒 Checksums (SHA-256):
-            - Windows (.exe): `$(cat dist-release/windows/CAT-Manager-Setup.exe.sha256)`
-            - macOS (.dmg): `$(cat dist-release/macos/CAT-Manager.dmg.sha256)`
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
-
-      - name: Sync Release URLs with Website Release Center
-        run: |
-          WIN_SHA=$(cat dist-release/windows/CAT-Manager-Setup.exe.sha256 | tr -d ' \r\n')
-          MAC_SHA=$(cat dist-release/macos/CAT-Manager.dmg.sha256 | tr -d ' \r\n')
-          WIN_SIZE=$(stat -c%s dist-release/windows/CAT-Manager-Setup.exe)
-          MAC_SIZE=$(stat -c%s dist-release/macos/CAT-Manager.dmg)
-
-          WIN_URL="https://github.com/${{ github.repository }}/releases/download/${{ env.TAG }}/CAT-Manager-Setup-${{ env.VERSION }}.exe"
-          MAC_URL="https://github.com/${{ github.repository }}/releases/download/${{ env.TAG }}/CAT-Manager-${{ env.VERSION }}.dmg"
-
-          echo "Synchronizing GitHub Release URLs with cathouse.gt.tc Release Center..."
-          if [ -n "${{ secrets.ADMIN_JWT_TOKEN }}" ]; then
-            # Sync Windows Release
-            curl -s -X POST "https://cathouse.gt.tc/api/v1/admin/releases/create" \
-              -H "Content-Type: application/json" \
-              -H "Authorization: Bearer ${{ secrets.ADMIN_JWT_TOKEN }}" \
-              -d "{\"version\":\"${{ env.VERSION }}\",\"platform\":\"windows\",\"architecture\":\"x64\",\"filename\":\"CAT-Manager-Setup-${{ env.VERSION }}.exe\",\"downloadUrl\":\"${WIN_URL}\",\"fileSize\":${WIN_SIZE},\"sha256\":\"${WIN_SHA}\",\"releaseNotes\":\"Bản phát hành chính thức ${{ env.TAG }}\",\"isMandatory\":0,\"isPublished\":1}"
-
-            # Sync macOS Release
-            curl -s -X POST "https://cathouse.gt.tc/api/v1/admin/releases/create" \
-              -H "Content-Type: application/json" \
-              -H "Authorization: Bearer ${{ secrets.ADMIN_JWT_TOKEN }}" \
-              -d "{\"version\":\"${{ env.VERSION }}\",\"platform\":\"macos\",\"architecture\":\"universal\",\"filename\":\"CAT-Manager-${{ env.VERSION }}.dmg\",\"downloadUrl\":\"${MAC_URL}\",\"fileSize\":${MAC_SIZE},\"sha256\":\"${MAC_SHA}\",\"releaseNotes\":\"Bản phát hành chính thức ${{ env.TAG }}\",\"isMandatory\":0,\"isPublished\":1}"
-          fi
