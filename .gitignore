@@ -1,0 +1,56 @@
+# =============================================================================
+# CAT ECOSYSTEM - STRICT SOURCE PROTECTION & LEAK PREVENTION (.gitignore)
+# As per v1.1.4 Architecture: Original source code MUST NEVER be pushed to GitHub.
+# =============================================================================
+
+# 1. Local Original Source Code (Strictly Private to Local PC)
+web/
+backend/
+desktop-app/
+extensions/
+SOURCE-ORIGINAL/
+SECURE-BUILD/
+SETUP-PROTECTED/
+UPDATE-PROTECTED/
+
+# 2. Dependencies & Build Caches
+node_modules/
+dist/
+build/
+release/
+.cache/
+scratch/
+BUILD-REPORTS/
+cat-ecosystem-antigravity-skill/
+scripts/test*
+scripts/*.php
+scripts/automated_build_and_release.js
+scripts/publish_to_github_releases.js
+scripts/sync_github_releases_to_website.js
+scripts/update_checksums.js
+
+# 3. Environment, Secrets & Credentials
+.env*
+*.env
+config/ftp_config.txt
+config/mysql_config.txt
+config/*private*
+*.pem
+!config/ed25519_public.pem
+FTP.txt
+key git.txt
+*token*
+*secret*
+
+# 4. Source Maps & Debug Symbols
+*.map
+
+# 5. OS & Database Files
+.DS_Store
+Thumbs.db
+*.sqlite
+*.sqlite*
+*.sqlite3
+*.db
+*.log
+logs/

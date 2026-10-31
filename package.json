@@ -1,0 +1,26 @@
+{
+  "name": "cat-ecosystem",
+  "version": "1.1.4",
+  "description": "CAT Ecosystem - Adobe Premiere Pro & After Effects Extension Manager",
+  "author": "CAT Ecosystem <support@catmanager.com>",
+  "scripts": {
+    "build": "npm run --prefix desktop-app build",
+    "build:win": "npm run --prefix desktop-app build:win",
+    "build:mac": "npm run --prefix desktop-app build:mac",
+    "desktop": "npm run --prefix desktop-app start",
+    "web:build": "npm run --prefix web build",
+    "secure:check-source": "node SECURE-BUILD/scripts/runner.js check-source",
+    "secure:prepare": "node SECURE-BUILD/scripts/runner.js prepare",
+    "secure:build": "node SECURE-BUILD/scripts/runner.js build",
+    "secure:obfuscate": "node SECURE-BUILD/scripts/runner.js obfuscate",
+    "secure:setup": "node SECURE-BUILD/scripts/runner.js setup",
+    "secure:patch": "node SECURE-BUILD/scripts/runner.js patch",
+    "secure:sign": "node SECURE-BUILD/scripts/runner.js sign",
+    "secure:verify": "node SECURE-BUILD/scripts/runner.js verify",
+    "secure:release": "node SECURE-BUILD/scripts/runner.js release",
+    "secure:all": "node SECURE-BUILD/scripts/runner.js all"
+  },
+  "devDependencies": {
+    "javascript-obfuscator": "^4.1.1"
+  }
+}

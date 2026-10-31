@@ -1,0 +1,6 @@
+GITHUB_OWNER=nguyenduyhoen-bot
+GITHUB_REPO=autococ-updates
+GITHUB_API=https://api.github.com/repos/nguyenduyhoen-bot/autococ-updates
+GITHUB_RELEASES_URL=https://github.com/nguyenduyhoen-bot/autococ-updates/releases
+GITHUB_LATEST_API=https://api.github.com/repos/nguyenduyhoen-bot/autococ-updates/releases/latest
+GITHUB_CHANNEL=stable

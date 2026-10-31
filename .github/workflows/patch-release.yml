@@ -1,0 +1,104 @@
+name: Secure Patch Release (Ed25519 Signed)
+
+on:
+  push:
+    tags: [ 'v*' ]
+  workflow_dispatch:
+    inputs:
+      from_version:
+        description: 'From Version'
+        required: false
+        default: '1.1.1'
+      to_version:
+        description: 'To Version'
+        required: false
+        default: '1.1.4'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-sign-patch:
+    name: Build & Sign Differential Patch
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Desktop App Dependencies
+        run: |
+          cd desktop-app
+          npm ci || npm install
+
+      - name: Build Desktop Renderer
+        run: |
+          npm run build:renderer --prefix desktop-app
+
+      - name: Write Ed25519 Private Key from Secrets
+        run: |
+          mkdir -p config
+          echo "${{ secrets.ED25519_PRIVATE_KEY }}" > config/ed25519_private.pem
+          chmod 600 config/ed25519_private.pem
+
+      - name: Generate Differential Patch Package
+        run: |
+          node scripts/generate_patch.js
+
+      - name: STRICT PRE-PUBLISH SECURITY AUDIT (Section 7)
+        run: |
+          echo "=================================================================="
+          echo "🛡️ AUDITING ASSETS FOR PROHIBITED INSTALLERS (.exe, .dmg, .msi)"
+          echo "=================================================================="
+          
+          # Check for forbidden installer formats in release/patches
+          FORBIDDEN=$(find release/patches -type f \( -name "*.exe" -o -name "*.dmg" -o -name "*.msi" -o -name "*.pkg" \))
+          if [ -n "$FORBIDDEN" ]; then
+            echo "❌ CRITICAL SECURITY ERROR: Forbidden installer file found:"
+            echo "$FORBIDDEN"
+            echo "Aborting release immediately as per v1.1.2 security requirements."
+            exit 1
+          fi
+          
+          echo "✅ Pre-publish check passed: No installer executables detected."
+
+          # Verify all 5 required patch assets are present
+          REQUIRED_FILES=(
+            "release/patches/CAT-Patch-1.1.2-to-1.1.3.zip"
+            "release/patches/patch-manifest.json"
+            "release/patches/SHA256SUMS.txt"
+            "release/patches/patch-signature.sig"
+            "release/patches/RELEASE_NOTES.md"
+          )
+
+          for file in "${REQUIRED_FILES[@]}"; do
+            if [ ! -f "$file" ]; then
+              echo "❌ ERROR: Missing required patch asset: $file"
+              exit 1
+            fi
+            echo "✅ Verified: $file ($(stat -c%s "$file") bytes)"
+          done
+
+      - name: Publish Patch Release to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          repository: nguyenduyhoen-bot/autococ-updates
+          tag_name: ${{ github.ref_name || 'v1.1.4' }}
+          name: CAT Manager v1.1.4 Secure Patch Release
+          draft: false
+          prerelease: false
+          body_path: release/patches/RELEASE_NOTES.md
+          files: |
+            release/patches/CAT-Patch-*.zip
+            release/patches/patch-manifest.json
+            release/patches/SHA256SUMS.txt
+            release/patches/patch-signature.sig
+            release/patches/RELEASE_NOTES.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
+
