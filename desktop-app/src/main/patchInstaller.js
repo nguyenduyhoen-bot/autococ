@@ -412,6 +412,33 @@ class PatchInstaller {
         }
       }
 
+      // macOS Code Signature Integrity Check (Section 3 Requirement)
+      if (process.platform === 'darwin') {
+        try {
+          const execPath = process.execPath || '';
+          let appBundlePath = null;
+          if (execPath.includes('.app/Contents/MacOS')) {
+            appBundlePath = execPath.substring(0, execPath.indexOf('.app') + 4);
+          } else if (app && typeof app.getAppPath === 'function') {
+            const p = path.resolve(app.getAppPath(), '../../../..');
+            if (p.endsWith('.app')) appBundlePath = p;
+          }
+
+          if (appBundlePath && fs.existsSync(appBundlePath)) {
+            console.log(`[PatchInstaller] 🍎 macOS: Kiểm tra tính toàn vẹn chữ ký số App Bundle: ${appBundlePath}`);
+            try {
+              execSync(`codesign --verify --deep --strict "${appBundlePath}"`, { stdio: 'pipe' });
+              console.log('[PatchInstaller] ✅ Chữ ký số macOS App Bundle toàn vẹn và hợp lệ.');
+            } catch (csErr) {
+              console.warn('[PatchInstaller] ⚠️ Không bảo toàn được chữ ký số App Bundle:', csErr.message);
+              throw new Error('Chữ ký số macOS App Bundle không được bảo toàn sau khi vá. Đã tự động Rollback an toàn. Vui lòng tải bộ cài DMG chính thức (CAT-Manager-1.1.4.dmg) để nâng cấp.');
+            }
+          }
+        } catch (macAuditErr) {
+          throw macAuditErr;
+        }
+      }
+
       console.log('[PatchInstaller] ✅ Áp dụng bản vá thành công!');
       return {
         success: true,
